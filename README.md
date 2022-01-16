@@ -18,7 +18,7 @@ Applications and services often require Authentication and Autherization. A libr
 
 The sidecar pattern is a single-node pattern made up of two containers. The first is the application container. It contains the core logic for the application. In addition to the application container, there is a sidecar container. The role of the sidecar is to augment and improve the application container, often without the application container’s knowledge
 
-![N|Solid](https://github.com/turkelk/istio/blob/main/Assets/sidecarms.png)
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/sidecarms.png)
 
 ## Scenario
 
@@ -83,13 +83,13 @@ If we check the config of the Account service, there are records related to the 
   istioctl pc clusters deploy/accounts-accounts-api -n banking
 ```
 
-![N|Solid](https://github.com/turkelk/istio/blob/main/Assets/accountscfgcluster.png)
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/accountscfgcluster.png)
 
 ```sh
   istioctl pc endpoints deploy/accounts-accounts-api -n banking
 ```
 
-![N|Solid](https://github.com/turkelk/istio/blob/main/Assets/accountsendpoints.png)
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/accountsendpoints.png)
 
 
 
@@ -135,7 +135,7 @@ After default sidecar resource is created, Transfer APIs can not access Accounts
 ```sh 
   kubectl exec svc/transfers-transfers-api -c transfers-api curl -I 'http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1' -n banking
 ```
-![N|Solid](https://github.com/turkelk/istio/blob/main/Assets/transfers502badgateway.png)
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/transfers502badgateway.png)
 
 
 We need to create specific sidecar resoruce for Transfers API worloads including Customer and Accounts API in egress rules.
@@ -167,7 +167,7 @@ After transfers sidecar resource is created, Transfer APIs will able to call Cus
   kubectl exec svc/transfers-transfers-api -c transfers-api curl -I 'http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1' -n banking
 ```
 
-![N|Solid](https://github.com/turkelk/istio/blob/main/Assets/transferscustomersucess.png)
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/transferscustomersucess.png)
 
 
 So far so good, BUT we still have some issues. Remember Requirement. "Transfers API can call only GET customers from Customers API and GET accounts from Accounts API. ". As of now Transfers API can call any endpoint from both micro services. We can define policies on Customers API and Accounts API to make sure Transfers API can call only GET endpoint of customers and accounts resoruce.  
@@ -195,7 +195,7 @@ After deny-all policy is applied, calls should start getting 403 forbidden - RBA
   kubectl exec svc/transfers-transfers-api -c transfers-api curl -I 'http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1' -n banking
 ```
 
-![N|Solid](https://github.com/turkelk/istio/blob/main/Assets/transferscustomersucess.png)
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/transferscustomersucess.png)
 
 In order to enable Transfers API to access Customers API and Accounts API, a new AuthorizationPolicy must be applied to worklodes respectivelly.
 
@@ -236,7 +236,7 @@ Best option is 3rd one.  If we only allow Transfer API, AuthorizationPolicy will
 
 Let's cut it short and add the necessary policy to the Customers API workloads.
 
-![N|Solid](https://github.com/turkelk/istio/blob/main/Assets/customersap.png)
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/customersap.png)
 
 
 

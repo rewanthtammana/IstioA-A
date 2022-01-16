@@ -1,0 +1,15 @@
+# Allow transfer api to call customers and accounts api
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: transfers
+  namespace: banking
+spec:
+  workloadSelector:
+    labels:
+      app.kubernetes.io/instance: transfers
+      app.kubernetes.io/name: transfers-api
+  egress:
+  - hosts:
+    - "./customers-customers-api.banking.svc.cluster.local"
+    - "./accounts-accounts-api.banking.svc.cluster.local"

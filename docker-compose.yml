@@ -1,0 +1,26 @@
+version: "3.4"
+
+services:
+
+    accounts-api:
+        image: ${REGISTRY}/accounts.api:latest
+        build:
+            context: .
+            dockerfile: src/Accounts/Accounts.API/Dockerfile
+        restart: on-failure
+
+    customers-api:
+        image: ${REGISTRY}/customers.api:latest
+        build:
+            context: .
+            dockerfile: src/Customers/Customers.API/Dockerfile
+        restart: on-failure   
+
+    transfers-api:
+        image: ${REGISTRY}/transfers.api:latest
+        build:
+            context: .
+            dockerfile: src/Transfers/Transfers.API/Dockerfile
+        restart: on-failure                        
+
+ 

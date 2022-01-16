@@ -1,0 +1,10 @@
+# this needs to be single in istio gateway 
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: master-realm
+  namespace: banking
+spec:
+  jwtRules:
+  - issuer: "http://127.0.0.1/auth/realms/master"
+    jwksUri: http://keycloak.default.svc/auth/realms/master/protocol/openid-connect/certs    

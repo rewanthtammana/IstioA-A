@@ -1,0 +1,27 @@
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+ name: "account-accounts"
+ namespace: banking
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: accounts
+      app.kubernetes.io/name: apis-common
+  rules:
+  - from:
+    - source:
+        namespaces: ["*"] 
+    to:
+    - operation:
+        paths: ["/api/v1/accounts"]
+    when:
+    - key: request.auth.claims[scope]
+      values: ["account:accounts:full_access", "accounts:full_access"]   
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/v1/accounts"]
+    when:
+    - key: request.auth.claims[scope]
+      values: ["account:accounts:read_only", "account:accounts:full_access", "account:full_access"]               

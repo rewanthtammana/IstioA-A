@@ -1,0 +1,6 @@
+dependencies:
+- name: apis-common
+  repository: file://../common
+  version: 1.0.0
+digest: sha256:839ba3b065b00c713609514e93b75da53fdcde70f9b140ae7ffc98b8f48091ee
+generated: "2022-01-16T15:56:22.665054+04:00"

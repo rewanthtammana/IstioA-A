@@ -1,0 +1,62 @@
+replicaCount: 1
+clusterName: bnk-cluster
+global:
+  image:
+    repository: kadirzade/bnk-transfers.api
+    tag: latest
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  ingress:
+    enabled: false
+
+  resources: 
+    limits:
+      cpu: 100m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 1
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+    
+  env: {}
+  # probes:
+  #   liveness:
+  #     path: /hc/live
+  #     initialDelaySeconds: 10
+  #     periodSeconds: 30
+  #     port: 80
+  #   readiness:
+  #     path: /hc/ready
+  #     timeoutSeconds: 5
+  #     initialDelaySeconds: 30
+  #     periodSeconds: 10
+  #     failureThreshold: 4
+  #     successThreshold: 1
+  #     port: 80     
+
+      

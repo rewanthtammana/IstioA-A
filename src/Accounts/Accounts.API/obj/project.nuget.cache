@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "/5oJFIwalYQEX+zAqxjZrWqetEVQqbNpskTIjpIKdeh79wXhWCvR/b8PCuoOcQPxq8wYjBD7oOQDMDK25eR9YA==",
+  "success": true,
+  "projectFilePath": "/Users/turkelgadirzade/Desktop/Projects/Istio/src/Accounts/Accounts.API/Accounts.API.csproj",
+  "expectedPackageFiles": [
+    "/Users/turkelgadirzade/.nuget/packages/microsoft.aspnetcore.mvc.versioning/4.1.1/microsoft.aspnetcore.mvc.versioning.4.1.1.nupkg.sha512",
+    "/Users/turkelgadirzade/.nuget/packages/microsoft.extensions.apidescription.server/3.0.0/microsoft.extensions.apidescription.server.3.0.0.nupkg.sha512",
+    "/Users/turkelgadirzade/.nuget/packages/microsoft.openapi/1.2.3/microsoft.openapi.1.2.3.nupkg.sha512",
+    "/Users/turkelgadirzade/.nuget/packages/swashbuckle.aspnetcore/5.6.3/swashbuckle.aspnetcore.5.6.3.nupkg.sha512",
+    "/Users/turkelgadirzade/.nuget/packages/swashbuckle.aspnetcore.swagger/5.6.3/swashbuckle.aspnetcore.swagger.5.6.3.nupkg.sha512",
+    "/Users/turkelgadirzade/.nuget/packages/swashbuckle.aspnetcore.swaggergen/5.6.3/swashbuckle.aspnetcore.swaggergen.5.6.3.nupkg.sha512",
+    "/Users/turkelgadirzade/.nuget/packages/swashbuckle.aspnetcore.swaggerui/5.6.3/swashbuckle.aspnetcore.swaggerui.5.6.3.nupkg.sha512"
+  ],
+  "logs": []
+}

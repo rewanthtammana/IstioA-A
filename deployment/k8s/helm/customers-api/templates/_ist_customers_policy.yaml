@@ -1,0 +1,72 @@
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+ name: "customer-customers"
+ namespace: banking
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: customers
+      app.kubernetes.io/name: customers-api
+  rules:
+  - from:
+    - source:
+        namespaces: ["*"] 
+    to:
+    - operation:
+        paths: ["/api/v1/customers"]
+    when:
+    - key: request.auth.claims[scope]
+      values: ["customer:customers:full_access", "customer:full_access"]   
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/v1/customers"]
+    when:
+    - key: request.auth.claims[scope]
+      values: ["customer:customers:read_only", "customer:customers:full_access", "customer:full_access"]               
+
+# curl -i http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1 -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJwa3lrTlFYZ1pjNUZWWl9OSWVaQjFuWU5RQjhUSkR2eDhnUERxUUU1b1RRIn0.eyJleHAiOjE2MzkwNjc3MzYsImlhdCI6MTYzOTA2NDEzNiwianRpIjoiNzJiM2FkMzMtODYyMC00MTljLTg4N2ItNTg0NjU1N2E2ZTkwIiwiaXNzIjoiaHR0cDovLzEyNy4wLjAuMS9hdXRoL3JlYWxtcy9tYXN0ZXIiLCJzdWIiOiJlZTA1YTQ0OS0xMDE3LTRkMTQtOGNlMy1lMTYyOTViY2JmNjMiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJ0cmFuc2FmZXJzLWFwaSIsImFjciI6IjEiLCJzY29wZSI6ImN1c3RvbWVyOmN1c3RvbWVyczpmdWxsX2FjY2VzcyIsImNsaWVudElkIjoidHJhbnNhZmVycy1hcGkiLCJjbGllbnRIb3N0IjoiMTcyLjE3LjAuMSIsImNsaWVudEFkZHJlc3MiOiIxNzIuMTcuMC4xIn0.2WTbg8e8MD_0YihcsFNyM-hWtURzACL2hJ13YX2XD_r5hNfGAsQGaGQ5foB-N0PLatCyDY5zYvsQ64PEjRHm4-v1jRc0AOBoLlvJAMGs5e4VQhVnraUK6c8q2ZFZ1U_5AWiiDY38al1Ug853jJiXhNd0GIR2jrH7FtN08PhHXhYWpR7UFLXbeby-HEATimXJUhkAIvZwudRvyCfziRW0OrA4z495dptHuowM7hvI-4xxAeqZG7qEfS9-uGE9EWiB0Y6g9vNFd3jDMvljDPtFrKkZtxef-MeN56Ijt_WPbB7yIKr1SjTUVogQJGTGlFtMbh1NFxyo22s66ZEdSY2S8w"          
+
+# apiVersion: "security.istio.io/v1beta1"
+# kind: "AuthorizationPolicy"
+# metadata:
+#   name: "customers"
+#   namespace: banking
+# spec:
+# #  selector:
+# #    matchLabels:
+# #       app.kubernetes.io/instance: customers
+# #       app.kubernetes.io/name: customers-api
+# #  action: ALLOW
+#  rules:
+#  - from:
+#    - source:
+#        namespaces: ["banking"]
+#    to:
+#    - operation:
+#        methods: ["GET"]
+#        paths: ["/customers*"]
+#    when:
+#    - key: request.auth.claims[iss]
+#      values: ["http://127.0.0.1/auth/realms/master"]  
+
+# # curl -i http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1 -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJwa3lrTlFYZ1pjNUZWWl9OSWVaQjFuWU5RQjhUSkR2eDhnUERxUUU1b1RRIn0.eyJleHAiOjE2Mzg5OTY1NDAsImlhdCI6MTYzODk5NjQ4MCwianRpIjoiNjA3ODNhYjctYTllYi00YWY0LThlY2MtMDc4MjNlMTQyMWFhIiwiaXNzIjoiaHR0cDovLzEyNy4wLjAuMS9hdXRoL3JlYWxtcy9tYXN0ZXIiLCJzdWIiOiJlZTA1YTQ0OS0xMDE3LTRkMTQtOGNlMy1lMTYyOTViY2JmNjMiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJ0cmFuc2FmZXJzLWFwaSIsImFjciI6IjEiLCJzY29wZSI6ImN1c3RvbWVyOmN1c3RvbWVyczpyZWFkX29ubHkiLCJjbGllbnRJZCI6InRyYW5zYWZlcnMtYXBpIiwiY2xpZW50SG9zdCI6IjE3Mi4xNy4wLjEiLCJjbGllbnRBZGRyZXNzIjoiMTcyLjE3LjAuMSJ9.RQmA3xUp9u6h9nHYZDRwrjfb5YTy7uSPXhpr-haZXQj-HJOsfWx7gmNJMv0yf4mYiSMYwe7yb7hYud3DdIccU8_T-T06-28SibDmsQbK1FBvf3VbdCN3LiUCvbLOn3oSLGH-86YIofI_0rP9Ykj9MSX0ZW3mx1_WS9wlHmcHSJ0RujoKiPMImfKh7DOXvmbt4Yesz--lV5Yads41QpLG3E-lddPS7ZvFnVi9Zub7PvAtjtSeGy4WmDFx4obIlk28VgP1W9i9vY_s76zawmy01-cH35oeBA_XUfxRT5KdmUCkwPMV8Hro5C79h4KEvMwvsHAqRn2JxPsNlKTW3xJLBQ" 
+
+
+# # spec:
+# #   rules:
+# #       - to:
+# #         - operation:
+# #             methods: ["GET"]
+# #             paths: ["/customers"]
+# #         when:
+# #         - key: request.auth.claims[scope]
+# #           values: ["customer:customers:read_only"]
+# #       - to:
+# #         - operation:
+# #             methods: ["POST"]
+# #             paths: ["/customers"]
+# #         when:
+# #         - key: request.auth.claims[scope]
+# #           values: ["customer:customers:full_access"]     

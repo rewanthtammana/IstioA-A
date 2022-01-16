@@ -1,0 +1,12 @@
+# Creating mesh wide sidecar resource to restrict the egress traffic of all sidecars to istio control plane only
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  egress:
+  - hosts:
+    - "istio-system/*"
+  outboundTrafficPolicy:
+    mode: REGISTRY_ONLY

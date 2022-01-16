@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "api.fullname" . }}
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.global.autoscaling.enabled }}
+  replicas: {{ .Values.global.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.global.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "api.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "api.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.global.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.global.securityContext | nindent 12 }}
+          image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+
+          env:
+          
+          {{- if .Values.global.env.values -}}
+          {{- range .Values.global.env.values }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+          {{- end -}}
+          {{- end -}}
+          
+
+          {{- if .Values.global.env.secret -}}
+          {{- range .Values.global.env.secret }}
+            - name: {{ .env }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .key }}
+          {{- end -}}
+          {{- end }} 
+                    
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+              
+          {{ if .Values.global.probes -}}
+          {{- if .Values.global.probes.liveness -}}              
+          livenessProbe:
+            httpGet: 
+              port: {{ .Values.global.probes.liveness.port }}
+              path: {{ .Values.global.probes.liveness.path }}
+            initialDelaySeconds: {{ .Values.global.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.global.probes.liveness.periodSeconds }}
+          {{- end -}}
+          {{- end -}}
+
+          {{- if .Values.global.probes -}}
+          {{- if .Values.global.probes.readiness }}          
+          readinessProbe:
+            httpGet:
+              port: {{ .Values.global.probes.readiness.port }}
+              path: {{ .Values.global.probes.readiness.path }}
+            initialDelaySeconds: {{ .Values.global.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.global.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.global.probes.readiness.timeoutSeconds }}
+          {{- end -}}
+          {{- end }} 
+
+
+          resources:
+            {{- toYaml .Values.global.resources | nindent 12 }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

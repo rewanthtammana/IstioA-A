@@ -1,0 +1,22 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: account-route
+  namespace: banking
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - default/bnk-gateway  
+  http:
+  - match:
+    - uri:
+        prefix: "/account/"
+    rewrite:
+      uri: "/api/"                  
+    route:
+    - destination:
+        host: accounts-apis-common.banking.svc.cluster.local 
+        port:
+          number: 80                  
+

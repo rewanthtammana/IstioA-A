@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: account
+  namespace: banking
+spec:
+  workloadSelector:
+    labels:
+      app.kubernetes.io/instance: accounts
+      app.kubernetes.io/name: apis-common
+  egress:
+  - hosts:
+    - "./customers-customers-api.banking.svc.cluster.local"
+    # - "banking/*" -- enable all banking

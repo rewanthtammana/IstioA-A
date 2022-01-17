@@ -8,8 +8,8 @@ spec:
   workloadSelector:
     labels:
       app.kubernetes.io/instance: transfers
-      app.kubernetes.io/name: transfers-api
+      app.kubernetes.io/name: apis-common
   egress:
   - hosts:
-    - "./customers-customers-api.banking.svc.cluster.local"
-    - "./accounts-accounts-api.banking.svc.cluster.local"
+    - "./customers-apis-common.banking.svc.cluster.local"
+    - "./accounts-apis-common.banking.svc.cluster.local"

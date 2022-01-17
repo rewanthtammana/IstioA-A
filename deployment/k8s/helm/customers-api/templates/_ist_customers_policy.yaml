@@ -7,7 +7,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/instance: customers
-      app.kubernetes.io/name: customers-api
+      app.kubernetes.io/name: apis-common
   rules:
   - from:
     - source:

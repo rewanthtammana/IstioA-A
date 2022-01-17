@@ -16,7 +16,7 @@ spec:
       uri: "/api/"                  
     route:
     - destination:
-        host: customers-customers-api.banking.svc.cluster.local # interpreted as reviews.foo.svc.cluster.local
+        host: customers-apis-common.banking.svc.cluster.local # interpreted as reviews.foo.svc.cluster.local
         port:
           number: 80                  
 

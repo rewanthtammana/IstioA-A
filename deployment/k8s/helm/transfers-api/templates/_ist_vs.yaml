@@ -16,7 +16,7 @@ spec:
       uri: "/api/"                  
     route:
     - destination:
-        host: transfers-transfers-api.banking.svc.cluster.local 
+        host: transfers-apis-common.banking.svc.cluster.local 
         port:
           number: 80                  
 

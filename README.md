@@ -73,20 +73,20 @@ Simply, the fund transfer process in banking takes place as follows
   sh deployment/k8s/customers.sh
   sh deployment/k8s/transfers.sh
 ```
-After the services deployment, all micro services has an access to each other. This is not desirable because, logically, the account and the customers microservices does not need to call transfer microservice. This is not secure and not efficient. 
+After the deployment, all micro services has an access to each other. This is not desirable because, logically, the account and the customers microservices does not need to call transfer microservice. This is not secure and not efficient. 
 
 Out of the box, Istio cannot determine the access each service needs, so by default, it configures every service proxy to know about every other workload within the mesh which is not efficient. This bloats the configuration of the proxies needlessly. 
 
 If we check the config of the Account service, there are records related to the Transfers service. This record doesn't need to stay in the account proxy config
 
 ```sh
-  istioctl pc clusters deploy/accounts-accounts-api -n banking
+  istioctl pc clusters deploy/accounts-apis-common -n banking
 ```
 
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/accountscfgcluster.png)
 
 ```sh
-  istioctl pc endpoints deploy/accounts-accounts-api -n banking
+  istioctl pc endpoints deploy/accounts-apis-common -n banking
 ```
 
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/accountsendpoints.png)
@@ -96,7 +96,7 @@ If we check the config of the Account service, there are records related to the 
 Lets calculate the configuration size of the Accounts API workload:
 
 ```sh
-  kubectl -n banking exec -ti svc/accounts-accounts-api -c accounts-api -- curl -s localhost:15000/config_dump > /tmp/config_dump
+  kubectl -n banking exec -ti svc/accounts-apis-common -c apis-common -- curl -s localhost:15000/config_dump > /tmp/config_dump
   du -sh /tmp/config_dump
   324K    /tmp/config_dump
 ```
@@ -133,7 +133,8 @@ spec:
 After default sidecar resource is created, Transfer APIs can not access Accounts and Customers API. 
 
 ```sh 
-  kubectl exec svc/transfers-transfers-api -c transfers-api curl -I 'http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1' -n banking
+  kubectl exec svc/transfers-apis-common -c apis-common sh -n banking
+  curl 'http://customers-apis-common.banking.svc.cluster.local/api/v1/customers?cif=1'
 ```
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/transfers502badgateway.png)
 
@@ -153,18 +154,19 @@ We need to create specific sidecar resoruce for Transfers API worloads including
         app.kubernetes.io/name: transfers-api
     egress:
     - hosts:
-      - "./customers-customers-api.banking.svc.cluster.local"
-      - "./accounts-accounts-api.banking.svc.cluster.local"
+      - "./customers-apis-common.banking.svc.cluster.local"
+      - "./accounts-apis-common.banking.svc.cluster.local"
 ```
 
 ```sh 
-  kubectl apply -f deployment/k8s/helm/transfers-api/chart/templates/_ist_egress.yaml
+  kubectl apply -f deployment/k8s/helm/transfers-api/templates/_ist_egress.yaml
 ```
 
 After transfers sidecar resource is created, Transfer APIs will able to call Customers and Accounts 
 
 ```sh 
-  kubectl exec svc/transfers-transfers-api -c transfers-api curl -I 'http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1' -n banking
+  kubectl exec svc/transfers-apis-common -c apis-common sh -n banking 
+  curl 'http://customers-apis-common.banking.svc.cluster.local/api/v1/customers?cif=1'
 ```
 
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/transferscustomersucess.png)
@@ -192,7 +194,8 @@ spec: {}
 After deny-all policy is applied, calls should start getting 403 forbidden - RBAC: access denied
 
 ```sh 
-  kubectl exec svc/transfers-transfers-api -c transfers-api curl -I 'http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1' -n banking
+  kubectl exec -it svc/transfers-apis-common -c apis-common sh -n banking 
+  curl 'http://customers-apis-common.banking.svc.cluster.local/api/v1/customers?cif=1'
 ```
 
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/transferscustomersucess.png)
@@ -223,44 +226,98 @@ JSON Web Token (JWT) [JWT] is a JSON-based [RFC7159] security token encoding tha
 Scopes are often described as a mechanism to limit the access of the requesting party to the user’s resources. The client can request scope customers_read, meaning that the issued token will allow it to only query the customers endpoints and not to make any changes.
 
 
-There are multiple options to allow Transfers API to query the customers endpoint. 
+There are multiple options to allow Transfers API to query the customers and accounts endpoint. 
 
   1. Service account can be used. We can create new AuthorizationPolicy which grants Transfers API Service Account to query customers resource of Customers API and to query accounts resource of Accounts API.
 
   2. Subject Claim(sub). We can create new AuthorizationPolicy which grants Transfers API`s client id (sub claim in JWT token) to query customers resource of Customers API and to query accounts resource of Accounts API.
 
-  3. Scopes. Instead of just allowing sub claim (Clinet ID of Transfers API), allowing scopes.
+  3. Scopes. Instead of just allowing sub claim (Clinet ID of Transfers API) or Service account, allowing scopes.
 
-Best option is 3rd one.  If we only allow Transfer API, AuthorizationPolicy will need to be changed in the future when there is another service that wants to access customers and accounts resources. It is against SOLID. Remeber O principle of SOLID. Open to Extension Close to Modification. But now anyone with customers_read privilege can query customers. AuthorizationPolicy will be written once and will never change but is open to expansion.
+Best option is 3rd one. If we only authorize the service account or clientId(sub) of the Transfer API, it will be necessary to edit the AuthorizationPolicy when other services want to access the same resources in the future. It is against SOLID. Remeber O principle of SOLID. Open to Extension Close to Modification. Authorizing a scope instead of a service account or sub will provide access to the customers and accounts resources for anyone with required scopes in JWT. AuthorizationPolicy will be written once and will never change but is open to expansion.
 
 
 Let's cut it short and add the necessary policy to the Customers API workloads.
 
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/customersap.png)
 
+```sh 
+  kubectl apply -f deployment/k8s/helm/customers-api/templates/_ist_customers_policy.yaml
+```
+
+After this policy is created, no one can access the customers resource that does not have a JWT token anymore. JWT token is required and we need to acquire one. Alos For GET operation, JWT token must have at least one of the privileges in the list [customer:customers:read_only, customer:customers:full_access, customer:full_access]
+
+
+### KEYCLOAK
+
+KEYCLOAK is an OpenID Connect and OAuth 2.0 framework. It is a tool for “Identity and Access Management”. We will use keycloak to acquire and validate JWT tokens 
+
+```sh 
+  sh deployment/k8s/keycloak.sh
+```
+
+
+I will not explain the part of creating a client by logging in with keycloak admin user. We need to change some settings for client credentials flow in Keycloak
+
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/keycloakclient.png)
+
+
+After the client is created, we can get access tokens by sending a request to the token endpoint.
+
+client_secret in curl request can be found in Credentials tab under Clients
+
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/keycloakcred.png)
 
 
 ```sh 
-  kubectl apply -f deployment/k8s/helm/customers-api/chart/templates/_ist_customers_policy.yaml
+curl --location --request POST 'http://127.0.0.1/auth/realms/master/protocol/openid-connect/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'client_id=transfers-api' \
+--data-urlencode 'client_secret=<your secret>' \
+--data-urlencode 'grant_type=client_credentials'
 ```
 
-After this policy is created, no one can access the customers resource that does not have a JWT token anymore. For GET operation, JWT must have read_only or full_access privileges.
+Even if we add the access token obtained with Client Id and Secret as Bearer to the Authorization header, we will continue to receive the RBAC: access denied error. There could be two reasons for this
+
+1. We need to understand how RequestAuthentication and AuthorizationPolicy work. As can be seen in the diagram below, after the request authenticated the data contained in the SVID and JWT Token are extracted and stored as metadata to be user by Authorization Filters.
+
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/istiosecuritynutshel.png)
+
+Since we still haven't defined a RequestAuthentication, the filter metadata is null and the information in the JWT token is not populated in the context. Su rules in AuthorizationPolicy can not be executed.
 
 
+Seen in the diagram below reques.auth.claims is in the filter metadata and is extracted and populated from the JWT token during RequestAuthentication
 
-<!-- We can define a AuthorizationPolicy that authorizes the 
-  
-  1. Use of Service Account: Transfers API`s service account to perform the GET operation on the customers and accounts resources.
-  2. Use of JWT: JWT token`s sub (oauth 2.0 standart subject claim) to perform the GET operation on the customers and accounts resources.
-  3.  -->
-
-That topic is out of scope, I will focus on its implementation with JWT token.
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/policyrulescustomer.png)
 
 
+Lets create RequestAuthentication for banking namespace.
 
-We will consider B here. Client authentication becuase it is service(server) to service(servcer communication).  
+```sh 
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: master-realm
+  namespace: banking
+spec:
+  jwtRules:
+  - issuer: "http://127.0.0.1/auth/realms/master" 
+    jwksUri: http://idp-keycloak.default.svc/auth/realms/master/protocol/openid-connect/certs    
+```
 
-We can 
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/reqauth.png)
+
+```sh 
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: master-realm
+  namespace: banking
+spec:
+  jwtRules:
+  - issuer: "http://127.0.0.1/auth/realms/master" 
+    jwksUri: http://idp-keycloak.default.svc/auth/realms/master/protocol/openid-connect/certs    
+```
 
 
 When a Sidecar resource applies to a workload the control plane uses the egress field to determine to which services the workload requires access. That enables Istio’s control plane to discern relevant configuration and updates and send only those to the respective proxies. As a result, it avoids generating and distributing all the configurations on how to reach every other services and reduces the consumption of CPU, memory, and network bandwidth.

@@ -6,5 +6,5 @@ metadata:
   namespace: banking
 spec:
   jwtRules:
-  - issuer: "http://127.0.0.1/auth/realms/master"
+  - issuer: "http://127.0.0.1/auth/realms/master" 
     jwksUri: http://keycloak.default.svc/auth/realms/master/protocol/openid-connect/certs    

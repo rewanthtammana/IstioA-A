@@ -7,4 +7,4 @@ metadata:
 spec:
   jwtRules:
   - issuer: "http://127.0.0.1/auth/realms/master" 
-    jwksUri: http://keycloak.default.svc/auth/realms/master/protocol/openid-connect/certs    
+    jwksUri: http://idp-keycloak.default.svc/auth/realms/master/protocol/openid-connect/certs    

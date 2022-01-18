@@ -273,17 +273,24 @@ client_secret in curl request can be found in Credentials tab under Clients
 curl --location --request POST 'http://127.0.0.1/auth/realms/master/protocol/openid-connect/token' \
 --header 'Content-Type: application/x-www-form-urlencoded' \
 --data-urlencode 'client_id=transfers-api' \
---data-urlencode 'client_secret=<your secret>' \
+--data-urlencode 'client_secret=tGnNTLp0f7ySRLOgMnfHokmxwpDxh3bT' \
 --data-urlencode 'grant_type=client_credentials'
 ```
 
-Even if we add the access token obtained with Client Id and Secret as Bearer to the Authorization header, we will continue to receive the RBAC: access denied error. There could be two reasons for this
+Even if we get the access token obtained with Client Id and Secret and add as Bearer to the Authorization header, we will continue to receive the 403 Forbidden. 
+
+```sh 
+  kubectl exec -it svc/transfers-apis-common -c apis-common sh -n banking 
+  curl -i http://customers-apis-common.banking.svc.cluster.local/api/v1/customers?cif=1 -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJLU2lXb21GcHNyLVNtT2ZDWnpuc1RRekd6UUtzaHJNcXFqT2FZV1FXWk5vIn0.eyJleHAiOjE2NDI1MDM1MTQsImlhdCI6MTY0MjUwMzQ1NCwianRpIjoiNGRmMWY0MjctYzMyOC00NzM4LTgwNGEtYWYxYjgzODNlZmI1IiwiaXNzIjoiaHR0cDovLzEyNy4wLjAuMS9hdXRoL3JlYWxtcy9tYXN0ZXIiLCJzdWIiOiI3YzNiOGQwZC1hMDAyLTQxYzktYWU5Mi0wMjZiYzNmMGU2YzkiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJ0cmFuc2ZlcnMtYXBpIiwiYWNyIjoiMSIsInNjb3BlIjoiY3VzdG9tZXI6Y3VzdG9tZXJzOnJlYWRfb25seSIsImNsaWVudElkIjoidHJhbnNmZXJzLWFwaSIsImNsaWVudEhvc3QiOiIxNzIuMTcuMC4xIiwiY2xpZW50QWRkcmVzcyI6IjE3Mi4xNy4wLjEifQ.HGemTETggVikhV3GT8NgKKjyVNG67wNR9xbY8YWfo-BZK0Rg4X-w8Mvo62RLsKGKw7rcSr-WgQC0ttG21YHxbkNSb5tUHLwr-L28SxW7nTgXmNK7ye11IEBv6W8MGyYIFXLKuaJDBvi-Gc2oUffudsHJWt5Bjho_iD54wSuZ0YjURYVZUMTdTDjZC8OPuIrDdmPAeKhu1zombpcMKrCrTosYrAbA2hbQaQCcMVP4jJZcDjOQdlTYjT9Fe5mcqnxIuxc-O1-8jdEg0v8DHu1MbAzK386Vg5nsWFnR_rt2px41d6g2e0TKypraQIt-q7QcOsRyr4IlP0VecUkV_WzkNA"
+```
+
+There could be two reasons for this.
 
 1. We need to understand how RequestAuthentication and AuthorizationPolicy work. As can be seen in the diagram below, after the request authenticated the data contained in the SVID and JWT Token are extracted and stored as metadata to be user by Authorization Filters.
 
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/istiosecuritynutshel.png)
 
-Since we still haven't defined a RequestAuthentication, the filter metadata is null and the information in the JWT token is not populated in the context. Su rules in AuthorizationPolicy can not be executed.
+Since we still haven't defined a RequestAuthentication, the filter metadata is null and the information in the JWT token is not populated in the context. So rules in AuthorizationPolicy can not be executed.
 
 
 Seen in the diagram below reques.auth.claims is in the filter metadata and is extracted and populated from the JWT token during RequestAuthentication
@@ -307,186 +314,41 @@ spec:
 
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/reqauth.png)
 
+```sh    
+  kubectl apply -f deployment/istio/banking-RequestAuthentication.yaml  
+```
+
+After creatin RequestAuthentication we will still get the RBAC access denied - 403 Forbidden error.
+
+2. Second reason 403 Forbidden - We keep getting this error because at required scopes defined in the AuthorizationPolicy for GET is missing in the JWT token as shown below.
+
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/custscopesap.png)
+
+We need to create the required scopes (customer:customers:read_only - it is sufficient for transfer api because transfer api should call customers endpoint read only) in Keycloak admin console and assing those scopes to the transfes-api client.
+
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/custscopesap.png)
+
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/addscope.png)
+
+Let's get access token again after definition of scope.
+
 ```sh 
-apiVersion: security.istio.io/v1beta1
-kind: RequestAuthentication
-metadata:
-  name: master-realm
-  namespace: banking
-spec:
-  jwtRules:
-  - issuer: "http://127.0.0.1/auth/realms/master" 
-    jwksUri: http://idp-keycloak.default.svc/auth/realms/master/protocol/openid-connect/certs    
+curl --location --request POST 'http://127.0.0.1/auth/realms/master/protocol/openid-connect/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'client_id=transfers-api' \
+--data-urlencode 'client_secret=tGnNTLp0f7ySRLOgMnfHokmxwpDxh3bT' \
+--data-urlencode 'grant_type=client_credentials'
 ```
 
+Let's examine the token content. The scope we just added should be there.
 
-When a Sidecar resource applies to a workload the control plane uses the egress field to determine to which services the workload requires access. That enables Istio’s control plane to discern relevant configuration and updates and send only those to the respective proxies. As a result, it avoids generating and distributing all the configurations on how to reach every other services and reduces the consumption of CPU, memory, and network bandwidth.
-
-### DEFINING BETTER DEFAULTS WITH A MESH-WIDE SIDECAR CONFIGURATION
-
-The easiest way to reduce the Envoy configuration sent to every service proxy and improve control performance is to define a mesh-wide Sidecar configuration that permits egress traffic only to services within the istio-system namespace. Defining such a default configures all proxies within the mesh with the minimal configuration to connect only to the control plane and drops all configuration for connectivity to other services.
-This nudges service owners in the correct path of defining more specific Sidecar definitions for their workloads and explicitly state all egress traffic their services require. Thus ensuring that workloads receive minimal and relevant configuration needed for their processes.
-
-With the Sidecar definition below we create a mesh-wide Sidecar definition that allows connectivity only to the Istio services located in the istio-system namespace.
-
-```sh
-apiVersion: networking.istio.io/v1beta1
-kind: Sidecar
-metadata:
-  name: default
-  namespace: istio-system
-spec:
-  egress:
-  - hosts:
-    - "istio-system/*"
-  outboundTrafficPolicy:
-    mode: REGISTRY_ONLY
-```
-
-- The sidecar in the **istio-system** namespace applies to the entire mesh
-- Egress traffic is configured only for workloads in the istio-system namespace
-- The **REGISTRY_ONLY** mode allows outbound traffic only to services configured by the Sidecar
-
-```sh
- kubectl apply -f /istio/sidecar-mesh-wide.yaml
-```
-
-### Querying proxy configuration using istioctl
-
-The istioctl proxy-config command enables us to retrieve and filter the proxy configuration of a workload based on the Envoy xDS APIs, where each subcommand is appropriately named:
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/jwtio.png)
 
 
-- **cluster** - Retrieves cluster configuration 
-- **endpoint** - Retrieves endpoint configuration 
-- **listener** - Retrieves listener configuration 
-- **route** - Retrieves route configuration
-- **secret** - Retrieves secret configuration
+Let's query customers and check if it is working wiht new JWT token.
 
+BINGOOO
 
-```sh
-istioctl pc clusters deploy/accounts-accounts-api -n banking
-istioctl pc endpoints deploy/accounts-accounts-api -n banking
-istioctl pc listeners deploy/accounts-accounts-api -n banking
-istioctl pc routes deploy/accounts-accounts-api -n banking
-```
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/successwithjwt.png)
 
-### Egress Rules
-
-Egress field specifies the configuration of the sidecar for processing outbound traffic from the attached workload instance to other services in the mesh.
-
-
-Install curl on accounts container.
-
-```sh
-kubectl exec svc/accounts-accounts-api -c accounts-api  apk add curl -n banking
-```
-
-Let's make sure that the account api cannot access the customer api
-
-```sh
-kubectl exec svc/accounts-accounts-api -c accounts-api curl 'http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1' -n banking
-```
-
-Let's allow the account api to access the customer api
-
-```sh
-apiVersion: networking.istio.io/v1beta1
-kind: Sidecar
-metadata:
-  name: account
-  namespace: banking
-spec:
-  workloadSelector:
-    labels:
-      app.kubernetes.io/instance: accounts
-      app.kubernetes.io/name: accounts-api
-  egress:
-  - hosts:
-    - "./customers-customers-api.banking.svc.cluster.local"
-```
-
-```sh
-kubectl apply -f deployment/k8s/helm/accounts-api/chart/templates/_ist_sidecar_allow.yaml
-```
-
-Let's make sure that the account api can access the customer api
-
-Run curl command on account to get customer by id
-
-```sh
-kubectl exec svc/accounts-accounts-api -c accounts-api curl 'http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1' -n banking
-```
-
-### Restrict accounts-api to call only GET endpoints on customer-api
-
-To increase security, and simplify our thought process, let’s define a mesh-wide policy that denies all requests that do not explicitly specify an ALLOW policy
-
-```sh
-apiVersion: security.istio.io/v1beta1
-kind: AuthorizationPolicy
-metadata:
- name: deny-all
- namespace: istio-system
-spec: {}
-```
-
-
-```sh
- kubectl apply -f /istio/policy-deny-all-mesh.yaml
-```
-
-After the mesh wide deny all policy is created, let's check that the account api cannot access the customer api
-
-Below command needs to print access denied
-
-```sh
-kubectl exec svc/accounts-accounts-api -c accounts-api curl 'http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1' -n banking
-```
-
-
-Lets allow accounts-api to call customers-api with GET operation only
-
-Create AuthorizationPolicy under customers ms with name _ist_authorization_policy.yaml
-
-```sh
-apiVersion: "security.istio.io/v1beta1"
-kind: "AuthorizationPolicy"
-metadata:
- name: "accounts-viewer"
- namespace: banking
-spec:
- selector:
-   matchLabels:
-      app.kubernetes.io/instance: customers
-      app.kubernetes.io/name: customers-api
- rules:
- - from:
-   - source:
-       principals: ["cluster.local/ns/banking/sa/accounts-accounts-api"]
-   to:
-   - operation:
-       methods: ["GET"]
-```
-
-Create policy
-
-```sh
- kubectl apply -f /istio/policy-deny-all-mesh.yaml
-```
-
-Let's make sure that the account api can call GET endpoint of customer api
-
-
-```sh
-kubectl exec svc/accounts-accounts-api -c accounts-api curl 'http://customers-customers-api.banking.svc.cluster.local/api/v1/customers?cif=1' -n banking
-```
-
-Let's try to make a POST call to customer api
-
-Below call needs to print access denied.
-
-```sh
-kubectl exec -it svc/accounts-accounts-api -c accounts-api  bash -n banking
-curl -X POST -H "Content-Type: application/json" -d '{"cif","1234"}' http://customers-customers-api.banking.svc/api/v1/customers -n banking
-```
 

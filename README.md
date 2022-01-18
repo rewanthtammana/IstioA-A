@@ -326,7 +326,7 @@ After creatin RequestAuthentication we will still get the RBAC access denied - 4
 
 We need to create the required scopes (customer:customers:read_only - it is sufficient for transfer api because transfer api should call customers endpoint read only) in Keycloak admin console and assing those scopes to the transfes-api client.
 
-![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/custscopesap.png)
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/keycloakcustomerscopes.png)
 
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/addscope.png)
 

@@ -35,6 +35,8 @@ In the transfer process, simple the status of the sender and receiver accounts a
 
 ### Fund Transfer Flow
 
+![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/trasferflow.png)
+
 Simply, the fund transfer process in banking takes place as follows
 
 - Transfer API makes call to Accounts API to get sender account details to verify it
@@ -130,7 +132,7 @@ spec:
   sh deployment/k8s/egress-traffic-control-plane-only-mesh.sh
 ```
 
-After default sidecar resource is created, Transfer APIs can not access Accounts and Customers API. 
+After default sidecar resource is created, Transfer APIs can not access Accounts and Customers API. We need to fix it because for transfer flow Transfer API should query customers and accounts resources. 
 
 ```sh 
   kubectl exec svc/transfers-apis-common -c apis-common sh -n banking
@@ -162,7 +164,7 @@ We need to create specific sidecar resoruce for Transfers API worloads including
   kubectl apply -f deployment/k8s/helm/transfers-api/templates/_ist_egress.yaml
 ```
 
-After transfers sidecar resource is created, Transfer APIs will able to call Customers and Accounts 
+After transfers sidecar resource is created, Transfer APIs will able to query Customers and Accounts 
 
 ```sh 
   kubectl exec svc/transfers-apis-common -c apis-common sh -n banking 
@@ -172,7 +174,7 @@ After transfers sidecar resource is created, Transfer APIs will able to call Cus
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/transferscustomersucess.png)
 
 
-So far so good, BUT we still have some issues. Remember Requirement. "Transfers API can call only GET customers from Customers API and GET accounts from Accounts API. ". As of now Transfers API can call any endpoint from both micro services. We can define policies on Customers API and Accounts API to make sure Transfers API can call only GET endpoint of customers and accounts resoruce.  
+So far so good, BUT we still have some issues. Remember Requirement. "Transfers API can call only GET customers from Customers API and GET accounts from Accounts API. ". As of now Transfers API can call any endpoint from both micro services. We should define policies on Customers API and Accounts API to make sure Transfers API can call only GET endpoint of customers and accounts resoruce.  
 
 ## Creating mesh-wide policy that denies all requests that do not explicitly specify an ALLOW policy.
 
@@ -200,7 +202,7 @@ After deny-all policy is applied, calls should start getting 403 forbidden - RBA
 
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/transferscustomersucess.png)
 
-In order to enable Transfers API to access Customers API and Accounts API, a new AuthorizationPolicy must be applied to worklodes respectivelly.
+In order to enable Transfers API to access Customers API and Accounts API, a new AuthorizationPolicy must be applied to Customers and Accounts  worklodes respectivelly.
 
 Before going into the details of AuthorizationPolicy and implementation, it is useful to talk about the JWT token.
 

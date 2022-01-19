@@ -6,7 +6,7 @@ Applications and services often require Authentication and Autherization. Solvin
 
 Applications and services often require Authentication and Autherization. A library, framework can be built and tightly integrated into the application to fulfill the requirements. 
 
-### Problem
+### Problems of solving cross cutting concerns with libraries or frameworks
 
 - Considering that companies often use more than one language with microservices, separate framework needs to be developed for each language.
 
@@ -14,11 +14,26 @@ Applications and services often require Authentication and Autherization. A libr
 
 - Also means they are not well isolated, and an outage in one of these components can affect other components or the entire application. 
 
-### Solution - Sidecar pattern
+### Solution - Service Mesh 
+
+Service Mesh allows you to transparently add capabilities like observability, traffic management, and security, without adding them to your own code. The term “service mesh” describes both the type of software you use to implement this pattern, and the security or network domain that is created when you use that software
+
+#### Sidecar pattern
 
 The sidecar pattern is a single-node pattern made up of two containers. The first is the application container. It contains the core logic for the application. In addition to the application container, there is a sidecar container. The role of the sidecar is to augment and improve the application container, often without the application container’s knowledge
 
 ![N|Solid](https://github.com/turkelk/IstioA-A/blob/main/Assets/sidecarms.png)
+
+
+#### The Istio
+
+Istio is an open source service mesh that layers transparently onto existing distributed applications. Istio’s powerful features provide a uniform and more efficient way to secure, connect, and monitor services. Istio is the path to load balancing, service-to-service authentication, and monitoring – with few or no service code changes. Its powerful control plane brings vital features, including:
+
+Secure service-to-service communication in a cluster with TLS encryption, strong identity-based authentication and authorization
+Automatic load balancing for HTTP, gRPC, WebSocket, and TCP traffic
+Fine-grained control of traffic behavior with rich routing rules, retries, failovers, and fault injection
+A pluggable policy layer and configuration API supporting access controls, rate limits and quotas
+Automatic metrics, logs, and traces for all traffic within a cluster, including cluster ingress and egress
 
 ## Scenario
 

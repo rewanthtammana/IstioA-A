@@ -9,10 +9,10 @@ ENV PATH="${PATH}:/root/.dotnet/tools"
 
 COPY *.sln ./
 COPY src/*/*/*.csproj src/
-RUN dotnet references fix -ep ./IstioTrial.sln -wd . -rupf
+RUN dotnet references fix -ep ./IstioAandA.sln -wd . -rupf
 # Instead of dot references we can copy the proj file into the correct folder by move command
 
-RUN dotnet restore "IstioTrial.sln"
+RUN dotnet restore "IstioAandA.sln"
 
 COPY . .
 WORKDIR /app/src/Accounts/Accounts.API

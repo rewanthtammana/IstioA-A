@@ -67,6 +67,7 @@ Simply, the fund transfer process in banking takes place as follows
 ## Pre Requirments
 
 - k8s cluster - minikube
+- Helm
 
 ## Implementation
 
